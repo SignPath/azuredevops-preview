@@ -1,0 +1,35 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-2019'
+
+steps:
+- task: UseNode@1
+
+- script: npm install -g tfx-cli
+
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Output "Building the artifacts in build-output/unsigned"
+
+- task: SignPathSubmitSigningRequest@3
+  inputs:
+    waitForCompletion: 'sync'
+    inputArtifactPath: '$(Build.ArtifactStagingDirectory)/build-output/unsigned/executable.exe'
+    organizationId: '$(OrganizationId)'
+    projectSlug: 'executable'
+    signingPolicySlug: 'release-signing'
+    outputArtifactPath: '$(Build.ArtifactStagingDirectory)/build-output/signed/executable.exe'
+    allowOverwriting: false
+    ciUserToken: '$(CIUserToken)'
+    apiUrl: 'https://app.signpath.io/api/'
+    waitForCompletionTimeoutInSeconds: '3600'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)/build-output/signed/executable.exe'
+    artifact: 'Signed Executable'
